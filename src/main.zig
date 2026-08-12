@@ -1,71 +1,70 @@
-const std = @import("std");
-const Io = std.Io;
+const rl = @import("raylib");
 
-const Laboratorio2Graficas = @import("Laboratorio2Graficas");
+const framebuffer_width: i32 = 120;
+const framebuffer_height: i32 = 90;
+const pixel_size: i32 = 8;
 
-pub fn main(init: std.process.Init) !void {
-    // Prints to stderr, unbuffered, ignoring potential errors.
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+const screen_width: i32 = framebuffer_width * pixel_size;
+const screen_height: i32 = framebuffer_height * pixel_size;
+const framebuffer_size: usize = @intCast(framebuffer_width * framebuffer_height);
 
-    // This is appropriate for anything that lives as long as the process.
-    const arena: std.mem.Allocator = init.arena.allocator();
+const alive_color = rl.Color.init(110, 235, 255, 255);
+const dead_color = rl.Color.init(5, 15, 40, 255);
 
-    // Accessing command line arguments:
-    const args = try init.minimal.args.toSlice(arena);
-    for (args) |arg| {
-        std.log.info("arg: {s}", .{arg});
+const Framebuffer = [framebuffer_size]rl.Color;
+
+var current_framebuffer: Framebuffer = [_]rl.Color{dead_color} ** framebuffer_size;
+
+fn index(x: i32, y: i32) usize {
+    const row: usize = @intCast(y);
+    const column: usize = @intCast(x);
+    const width: usize = @intCast(framebuffer_width);
+    return row * width + column;
+}
+
+fn point(framebuffer: *Framebuffer, x: i32, y: i32, color: rl.Color) void {
+    if (x < 0 or x >= framebuffer_width or y < 0 or y >= framebuffer_height) {
+        return;
     }
 
-    // In order to do I/O operations need an `Io` instance.
-    const io = init.io;
-
-    // Stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_file_writer: Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
-    const stdout_writer = &stdout_file_writer.interface;
-
-    try Laboratorio2Graficas.printAnotherMessage(stdout_writer);
-
-    try stdout_writer.flush(); // Don't forget to flush!
+    framebuffer[index(x, y)] = color;
 }
 
-test "simple test" {
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(i32) = .empty;
-    defer list.deinit(gpa); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(gpa, 42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+fn get_color(framebuffer: *const Framebuffer, x: i32, y: i32) rl.Color {
+    const wrapped_x = @mod(x, framebuffer_width);
+    const wrapped_y = @mod(y, framebuffer_height);
+    return framebuffer[index(wrapped_x, wrapped_y)];
 }
 
-test "fuzz example" {
-    try std.testing.fuzz({}, testOne, .{});
-}
-
-fn testOne(context: void, smith: *std.testing.Smith) !void {
-    _ = context;
-    // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
-
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(u8) = .empty;
-    defer list.deinit(gpa);
-    while (!smith.eos()) switch (smith.value(enum { add_data, dup_data })) {
-        .add_data => {
-            const slice = try list.addManyAsSlice(gpa, smith.value(u4));
-            smith.bytes(slice);
-        },
-        .dup_data => {
-            if (list.items.len == 0) continue;
-            if (list.items.len > std.math.maxInt(u32)) return error.SkipZigTest;
-            const len = smith.valueRangeAtMost(u32, 1, @min(32, list.items.len));
-            const off = smith.valueRangeAtMost(u32, 0, @intCast(list.items.len - len));
-            try list.appendSlice(gpa, list.items[off..][0..len]);
-            try std.testing.expectEqualSlices(
-                u8,
-                list.items[off..][0..len],
-                list.items[list.items.len - len ..],
+fn draw_framebuffer(framebuffer: *const Framebuffer) void {
+    var y: i32 = 0;
+    while (y < framebuffer_height) : (y += 1) {
+        var x: i32 = 0;
+        while (x < framebuffer_width) : (x += 1) {
+            const color = get_color(framebuffer, x, y);
+            rl.drawRectangle(
+                x * pixel_size,
+                y * pixel_size,
+                pixel_size,
+                pixel_size,
+                color,
             );
-        },
-    };
+        }
+    }
+}
+
+pub fn main() void {
+    rl.initWindow(screen_width, screen_height, "Conway's Game of Life");
+    defer rl.closeWindow();
+
+    rl.setTargetFPS(60);
+
+    // Dibujar un punto
+    point(&current_framebuffer, framebuffer_width / 2, framebuffer_height / 2, alive_color);
+
+    while (!rl.windowShouldClose()) {
+        rl.beginDrawing();
+        draw_framebuffer(&current_framebuffer);
+        rl.endDrawing();
+    }
 }
