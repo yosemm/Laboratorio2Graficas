@@ -12,6 +12,10 @@ const alive_color = rl.Color.init(110, 235, 255, 255);
 const dead_color = rl.Color.init(5, 15, 40, 255);
 
 const Framebuffer = [framebuffer_size]rl.Color;
+const Cell = struct {
+    x: i32,
+    y: i32,
+};
 
 var current_framebuffer: Framebuffer = [_]rl.Color{dead_color} ** framebuffer_size;
 var next_framebuffer: Framebuffer = [_]rl.Color{dead_color} ** framebuffer_size;
@@ -102,15 +106,131 @@ fn draw_framebuffer(framebuffer: *const Framebuffer) void {
     }
 }
 
+fn add_pattern(framebuffer: *Framebuffer, start_x: i32, start_y: i32, cells: []const Cell) void {
+    for (cells) |cell| {
+        point(framebuffer, start_x + cell.x, start_y + cell.y, alive_color);
+    }
+}
+
+fn add_block(framebuffer: *Framebuffer, x: i32, y: i32) void {
+    const cells = [_]Cell{
+        .{ .x = 0, .y = 0 }, .{ .x = 1, .y = 0 },
+        .{ .x = 0, .y = 1 }, .{ .x = 1, .y = 1 },
+    };
+    add_pattern(framebuffer, x, y, &cells);
+}
+
+fn add_beehive(framebuffer: *Framebuffer, x: i32, y: i32) void {
+    const cells = [_]Cell{
+        .{ .x = 1, .y = 0 }, .{ .x = 2, .y = 0 },
+        .{ .x = 0, .y = 1 }, .{ .x = 3, .y = 1 },
+        .{ .x = 1, .y = 2 }, .{ .x = 2, .y = 2 },
+    };
+    add_pattern(framebuffer, x, y, &cells);
+}
+
+fn add_loaf(framebuffer: *Framebuffer, x: i32, y: i32) void {
+    const cells = [_]Cell{
+        .{ .x = 1, .y = 0 }, .{ .x = 2, .y = 0 },
+        .{ .x = 0, .y = 1 }, .{ .x = 3, .y = 1 },
+        .{ .x = 1, .y = 2 }, .{ .x = 3, .y = 2 },
+        .{ .x = 2, .y = 3 },
+    };
+    add_pattern(framebuffer, x, y, &cells);
+}
+
+fn add_boat(framebuffer: *Framebuffer, x: i32, y: i32) void {
+    const cells = [_]Cell{
+        .{ .x = 0, .y = 0 }, .{ .x = 1, .y = 0 },
+        .{ .x = 0, .y = 1 }, .{ .x = 2, .y = 1 },
+        .{ .x = 1, .y = 2 },
+    };
+    add_pattern(framebuffer, x, y, &cells);
+}
+
+fn add_tub(framebuffer: *Framebuffer, x: i32, y: i32) void {
+    const cells = [_]Cell{
+        .{ .x = 1, .y = 0 },
+        .{ .x = 0, .y = 1 },
+        .{ .x = 2, .y = 1 },
+        .{ .x = 1, .y = 2 },
+    };
+    add_pattern(framebuffer, x, y, &cells);
+}
+
+fn add_blinker(framebuffer: *Framebuffer, x: i32, y: i32) void {
+    const cells = [_]Cell{
+        .{ .x = 0, .y = 0 },
+        .{ .x = 0, .y = 1 },
+        .{ .x = 0, .y = 2 },
+    };
+    add_pattern(framebuffer, x, y, &cells);
+}
+
+fn add_toad(framebuffer: *Framebuffer, x: i32, y: i32) void {
+    const cells = [_]Cell{
+        .{ .x = 1, .y = 0 }, .{ .x = 2, .y = 0 }, .{ .x = 3, .y = 0 },
+        .{ .x = 0, .y = 1 }, .{ .x = 1, .y = 1 }, .{ .x = 2, .y = 1 },
+    };
+    add_pattern(framebuffer, x, y, &cells);
+}
+
+fn add_beacon(framebuffer: *Framebuffer, x: i32, y: i32) void {
+    const cells = [_]Cell{
+        .{ .x = 0, .y = 0 }, .{ .x = 1, .y = 0 },
+        .{ .x = 0, .y = 1 }, .{ .x = 1, .y = 1 },
+        .{ .x = 2, .y = 2 }, .{ .x = 3, .y = 2 },
+        .{ .x = 2, .y = 3 }, .{ .x = 3, .y = 3 },
+    };
+    add_pattern(framebuffer, x, y, &cells);
+}
+
+fn add_glider(framebuffer: *Framebuffer, x: i32, y: i32) void {
+    const cells = [_]Cell{
+        .{ .x = 1, .y = 0 },
+        .{ .x = 2, .y = 1 },
+        .{ .x = 0, .y = 2 },
+        .{ .x = 1, .y = 2 },
+        .{ .x = 2, .y = 2 },
+    };
+    add_pattern(framebuffer, x, y, &cells);
+}
+
+fn add_lwss(framebuffer: *Framebuffer, x: i32, y: i32) void {
+    const cells = [_]Cell{
+        .{ .x = 1, .y = 0 }, .{ .x = 4, .y = 0 },
+        .{ .x = 0, .y = 1 }, .{ .x = 0, .y = 2 },
+        .{ .x = 4, .y = 2 }, .{ .x = 0, .y = 3 },
+        .{ .x = 1, .y = 3 }, .{ .x = 2, .y = 3 },
+        .{ .x = 3, .y = 3 },
+    };
+    add_pattern(framebuffer, x, y, &cells);
+}
+
+fn load_initial_pattern(framebuffer: *Framebuffer) void {
+    // Still lifes.
+    add_block(framebuffer, 8, 8);
+    add_beehive(framebuffer, 32, 8);
+    add_loaf(framebuffer, 58, 8);
+    add_boat(framebuffer, 84, 8);
+    add_tub(framebuffer, 108, 8);
+
+    // Osciladores.
+    add_blinker(framebuffer, 15, 36);
+    add_toad(framebuffer, 50, 36);
+    add_beacon(framebuffer, 85, 35);
+
+    // Naves espaciales.
+    add_glider(framebuffer, 35, 66);
+    add_lwss(framebuffer, 88, 66);
+}
+
 pub fn main() void {
     rl.initWindow(screen_width, screen_height, "Conway's Game of Life");
     defer rl.closeWindow();
 
     rl.setTargetFPS(10);
-
-    point(&current_framebuffer, 10, 10, alive_color);
-    point(&current_framebuffer, 10, 11, alive_color);
-    point(&current_framebuffer, 10, 12, alive_color);
+    load_initial_pattern(&current_framebuffer);
 
     while (!rl.windowShouldClose()) {
         rl.beginDrawing();
