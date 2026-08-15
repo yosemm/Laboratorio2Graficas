@@ -17,8 +17,8 @@ const Cell = struct {
     y: i32,
 };
 
-var current_framebuffer: Framebuffer = [_]rl.Color{dead_color} ** framebuffer_size;
-var next_framebuffer: Framebuffer = [_]rl.Color{dead_color} ** framebuffer_size;
+var current_framebuffer: Framebuffer = @splat(dead_color);
+var next_framebuffer: Framebuffer = @splat(dead_color);
 
 fn index(x: i32, y: i32) usize {
     const row: usize = @intCast(y);
@@ -31,7 +31,6 @@ fn point(framebuffer: *Framebuffer, x: i32, y: i32, color: rl.Color) void {
     if (x < 0 or x >= framebuffer_width or y < 0 or y >= framebuffer_height) {
         return;
     }
-
     framebuffer[index(x, y)] = color;
 }
 
@@ -208,32 +207,39 @@ fn add_lwss(framebuffer: *Framebuffer, x: i32, y: i32) void {
 }
 
 fn load_initial_pattern(framebuffer: *Framebuffer) void {
-    // Still lifes.
-    add_block(framebuffer, 8, 8);
-    add_beehive(framebuffer, 32, 8);
-    add_loaf(framebuffer, 58, 8);
-    add_boat(framebuffer, 84, 8);
-    add_tub(framebuffer, 108, 8);
+    // Naves
+    add_lwss(framebuffer, 12, 16);
+    add_glider(framebuffer, 20, 48);
 
-    // Osciladores.
-    add_blinker(framebuffer, 15, 36);
-    add_toad(framebuffer, 50, 36);
-    add_beacon(framebuffer, 85, 35);
+    // Superior derecho
+    add_beacon(framebuffer, 92, 14);
+    add_beehive(framebuffer, 104, 30);
 
-    // Naves espaciales.
-    add_glider(framebuffer, 35, 66);
-    add_lwss(framebuffer, 88, 66);
+    // Medio izquierdo
+    add_boat(framebuffer, 18, 36);
+    add_toad(framebuffer, 38, 30);
+
+    // Centro y derecha
+    add_loaf(framebuffer, 74, 44);
+    add_blinker(framebuffer, 90, 54);
+
+    // Inferior
+    add_tub(framebuffer, 26, 76);
+    add_block(framebuffer, 66, 72);
 }
 
 pub fn main() void {
     rl.initWindow(screen_width, screen_height, "Conway's Game of Life");
     defer rl.closeWindow();
 
-    rl.setTargetFPS(10);
+    rl.setWindowPosition(80, 80);
+    rl.setTargetFPS(8);
+
     load_initial_pattern(&current_framebuffer);
 
     while (!rl.windowShouldClose()) {
         rl.beginDrawing();
+        rl.clearBackground(dead_color);
         draw_framebuffer(&current_framebuffer);
         rl.endDrawing();
 
